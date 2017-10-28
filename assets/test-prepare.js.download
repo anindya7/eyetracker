@@ -1,0 +1,11 @@
+$(document).ready(function() {
+    $('#trigger-slider-next').on('click', function(){
+        var currentSlide = $('.slick').slick('slickCurrentSlide');
+        var allSlides = $('.slide').length;
+        if (currentSlide+1 < allSlides) {
+            $('.slick').slick('slickNext');
+        } else {
+            $('#modal-run-test').modal('show');
+        }
+    });
+});

@@ -16,16 +16,21 @@
             <div id="calibration-point-countdown">
             </div>
         </div>
+        <canvas id="canvas1"  align="center"></canvas>
+        <button id="stopbutton" onclick="stopGazing()" type="button">Stop</button>
         
 
         <script>
-            var windowWidth = window.innerWidth;
+        var windowWidth = window.innerWidth;
         var windowHeight = window.innerHeight;
-        var imageWidth = 440;
-        var imageHeight = 330;
+        var canvasOne=document.getElementById("canvas1");
+        $("#canvas1").prop('width',(windowHeight-10));
+        $("#canvas1").height('height',(windowWidth-50));
+        // var imageWidth = 440;
+        // var imageHeight = 330;
         var calibrationPointSize = 40;
         var _DEBUG = false;
-
+              
         var centerScreen = [
             windowWidth/2 -calibrationPointSize*3/4 ,
             windowHeight/2 - calibrationPointSize*3/4,
@@ -58,8 +63,8 @@
         var globalProjectClock = 0;
 
         function drawCalibrationPoint(calibrationPointX, calibrationPointY) {
-            console.log("X="+calibrationPointX);
-            console.log("Y="+calibrationPointY);
+            //console.log("X="+calibrationPointX);
+            //console.log("Y="+calibrationPointY);
             var calibrationPoint = $('#calibrationPoint');
             calibrationPoint.css('left', calibrationPointX);
             calibrationPoint.css('top', calibrationPointY);
@@ -131,11 +136,11 @@
         function initCalibration() {
             // hideStudyInstructions();
 
-            if (_DEBUG) {
-                systemCalibrated = true;
-                setTimeout(studiestart, 500);
-                return;
-            }
+            // if (_DEBUG) {
+            //     systemCalibrated = true;
+            //     setTimeout(studiestart, 500);
+            //     return;
+            // }
             if (calibrationCounter >= calibrationPoints.length) {
                 drawCalibrationPoint(centerScreen[0], centerScreen[1]);
                 // setTimeout(function() {checkCalibrationBeforeStudy(0);}, 500);
@@ -180,10 +185,152 @@
             // Define Triggers
             // $('#run-calibration-trigger').on('click', function() {
                 // showStudyInstructions("Look directly at calibration points");
+                
                 drawCalibrationPoint(centerScreen[0], centerScreen[1]);
                 setTimeout(initCalibration, 3000);
+                
+                startTracking();
             // });
         });
 
 
 
+
+
+
+
+
+
+
+
+       
+         function startTracking() {
+          //  var video="";
+            var datas=[],hmap=[],datalist=[];
+            var topDist = '0px';
+            var leftDist = '0px';
+            var heat,max=1;
+
+            function checkIfTrackingReady() {
+                if (webgazer.isReady()) {
+                    setup();
+                } else {
+                    setTimeout(checkIfTrackingReady, 100);
+                }
+            }
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        var canv = document.getElementById('canvas1');
+        canv.width = width-10;
+        canv.height = height-50;
+        heat = simpleheat('canvas1');
+
+        webgazer.setRegression('ridge') /* currently must set regression and tracker */
+        .setTracker('clmtrackr')
+        .setGazeListener(function(data, clock) 
+        {
+            //console.log(data); /* data is an object containing an x and y key which are the x and y prediction coordinates (no bounds limiting) */
+            //console.log(clock); /* elapsed time in milliseconds since webgazer.begin() was called */
+            if (data)    
+            {     
+                datalist.push(Array(data.x,data.y,1));        
+                globalClock = clock;
+                var positionData = [];
+                var currentProjectClock = globalClock - globalProjectClock;
+                positionData[0] = data.x;
+                positionData[1] = data.y;
+                positionData[2] = Math.round(currentProjectClock);
+                positionData[3] = window.pageYOffset;
+                //studyProjectData.push(positionData);
+            }
+        })//remove semicolon after debugging
+        .begin()
+        .showPredictionPoints(true); /* shows a square every 100 milliseconds where current prediction is */
+
+    }; //end of startTracking
+        function setup() {
+            var video = document.getElementById('webgazerVideoFeed');
+            //console.log(video);
+            video.style.display = 'block';
+            video.style.position = 'relative';
+            video.style.top = '0px';
+            video.style.left = '0px';
+            video.style.right = '0px';
+            video.width = imageWidth;
+            video.height = imageHeight;
+            video.style.margin = 'auto';
+
+            webgazer.params.imgWidth = imageWidth;
+            webgazer.params.imgHeight = imageHeight;
+
+            // var overlay = document.createElement('canvas');
+            // overlay.id = 'overlay';
+            // overlay.style.display = 'inline-block';
+            // overlay.style.position = 'absolute';
+            // overlay.width = imageWidth;
+            // overlay.height = imageHeight;
+            // overlay.style.top = '0px';
+            // overlay.style.left = '0px';
+            // overlay.style.right = '0px';
+            // overlay.style.margin = 'auto';
+
+            // // document.body.appendChild(overlay);
+            // $('#tracking-video-target').append(overlay);
+
+            var cl = webgazer.getTracker().clm;
+        };
+            function stopGazing(){
+            webgazer.showPredictionPoints(false);
+            webgazer.end();
+            console.log("webgazer ended");
+            video.src="";
+            for(i=0; i<datalist.length;i++)
+                for(j=i+1;j<datalist.length;j++)
+                {
+                    if(datalist[i][0]===datalist[j][0] && datalist[i][1]===datalist[j][1])
+                    {
+                        datalist[i][2]= datalist[i][2]+1;
+                
+                datalist.splice(j,1);
+                 if (max < datalist[i][2])
+                  max = datalist[i][2];
+
+                    }
+                }
+            for(i=0; i<datalist.length;i++)
+            {
+              datalist[i][2] = Math.floor((datalist[i][2]/max)*15)
+            }
+
+                //  console.log(Array(i,j,hmap[i][j]));
+
+            
+
+            
+        //  heat.data(hmap);
+            heat.max(15);
+            // hmap=[768][1366];
+            // for(i<datas.length)
+            heat.data(datalist);
+            heat.draw();
+
+
+        };
+
+            window.onbeforeunload = function() {
+            webgazer.end(); //Uncomment if you want to save the data even if you reload the page.
+            window.localStorage.clear(); //Comment out if you want to save data across different sessions 
+};
+            
+            
+       
+
+
+        </script>
+
+
+
+
+
+    </body>
+    </html>
