@@ -1,0 +1,114 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0040)https://webgazer.cs.brown.edu/demo.html? -->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        
+        <!-- jQuery library -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        
+        <!-- Latest compiled JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <link href="/assets/font-awesome-animation.min.css" rel="stylesheet">
+        <script src="https://use.fontawesome.com/88fea37d6a.js"></script>
+        <!-- <script src="/assets/jquery-3.2.1.min.js"></script>  -->
+        <script src="/assets/webgazer.js"></script>
+        
+       
+    </head>
+    <script>
+    $(document).ready()
+{
+
+var video;
+    webgazer.setRegression('ridge') /* currently must set regression and tracker */
+            .setTracker('clmtrackr')
+            .removeMouseEventListeners()
+            .setGazeListener(function (data, clock) {
+                //console.log(data); /* data is an object containing an x and y key which are the x and y prediction coordinates (no bounds limiting) */
+                //console.log(clock); /* elapsed time in milliseconds since webgazer.begin() was called */
+                if (data && systemCalibrated)    //&& systemCalibrated
+                {
+                    globalClock = clock;
+                    //var positionData = [];
+                    var currentProjectClock = globalClock - globalProjectClock;
+                    //console.log(data);   
+                    datalist.push(Array(data.x, data.y, 1));
+                    datas.push(currentProjectClock, pageYOffset);
+                    // globalClock = clock;
+                    // var positionData = [];
+                    // var currentProjectClock = globalClock - globalProjectClock;
+                    // positionData[0] = data.x;
+                    // positionData[1] = data.y;
+                    // positionData[2] = Math.round(currentProjectClock);
+                    // positionData[3] = window.pageYOffset;
+                    //studyProjectData.push(positionData);
+                }
+            })//remove semicolon after debugging
+            .begin()
+            .showPredictionPoints(false); /* shows a square every 100 milliseconds where current prediction is */
+
+        
+            console.log("Before video element");
+
+            function getVideoStream() {
+              video = document.getElementById('webgazerVideoFeed');
+                //console.log(video);
+                if (video === null)
+                    setTimeout(getVideoStream, 500);
+                else
+                    setVideoProp();
+            }
+            setTimeout(getVideoStream, 500);
+
+            function setVideoProp() {
+                console.log("Setting up");
+                imageWidth = 568;
+                imageHeight = 426;
+                video.width = imageWidth;
+                video.height = imageHeight;
+                video.style.display = 'block';
+                video.style.position = 'relative';
+                video.style.top = '0px';
+                video.style.left = '0px';
+                video.style.right = '0px';
+                video.style.width = '100%';
+                video.style.margin = 'auto';
+                
+                var cl = webgazer.getTracker().clm;
+                //setTimeout(checkIfTrackingReady,100);
+                
+                overlay = document.createElement('canvas');
+                overlay.id = 'overlay';
+                overlay.style.display = 'inline-block';
+                overlay.style.position = 'absolute';
+                overlay.width = imageWidth;
+                overlay.height = imageHeight;
+                overlay.style.top = '0px';
+                overlay.style.left = '0px';
+                overlay.style.right = '0px';
+                overlay.style.margin = 'auto';
+
+                 function drawLoop() {
+                    requestAnimFrame(drawLoop);
+                    overlay.getContext('2d').clearRect(0, 0, imageWidth, imageHeight);
+                    if (cl.getCurrentPosition()) {
+                        cl.draw(overlay);
+                    }
+
+                }
+                drawLoop();
+                $("#tracking-video-target").append(video);
+                $("#tracking-video-target").append(overlay);
+            }
+        
+    };
+    </script>
+    <body>
+        <div id="tracking-video-target" class="text-center m-b-20">
+            <!-- video -->
+        
+        </div>
+    </body>
